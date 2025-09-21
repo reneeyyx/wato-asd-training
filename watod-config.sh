@@ -14,8 +14,7 @@
 ##   - gazebo           :   starts robot simulator (gazebo)
 ##   - robot            :   starts up robot nodes
 ##   - samples          :   starts up sample nodes for reference
-
-# ACTIVE_MODULES=""
+ACTIVE_MODULES="robot gazebo vis_tools"
 
 ################################# MODE OF OPERATION #################################
 ## Possible modes of operation when running watod.
