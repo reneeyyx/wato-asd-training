@@ -3,9 +3,14 @@
  
 #include "costmap_node.hpp"
  
-CostmapNode::CostmapNode() : Node("costmap"), costmap_(robot::CostmapCore(this->get_logger())) {
+CostmapNode::CostmapNode() 
+  : Node("costmap"),
+    width_(300),
+    height_(300),
+    resolution_(0.1),
+    inflation_radius_(1.0),
+    costmap_(robot::CostmapCore(this->get_logger())) {
   // Initialize the constructs and their parameters
-  string_pub_ = this->create_publisher<std_msgs::msg::String>("/test_topic", 10);
   lidar_sub_ = this->create_subscription<sensor_msgs::msg::LaserScan>(
     "/lidar", 10, std::bind(&CostmapNode::laserCallback, this, std::placeholders::_1));
   costmap_pub_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>("/costmap",10);
@@ -28,25 +33,25 @@ void CostmapNode::laserCallback(const sensor_msgs::msg::LaserScan::SharedPtr sca
 }
 
 void CostmapNode::initializeCostmap() {
-  cost_map_.info.resolution = 0.1;
-  cost_map_.info.width = 300;
-  cost_map_.info.height = 300;
+  cost_map_.info.resolution = resolution_;
+  cost_map_.info.width = width_;
+  cost_map_.info.height = height_;
   cost_map_.info.origin.position.x = -15;
   cost_map_.info.origin.position.y = -15;
   cost_map_.info.origin.position.z = 0;
-  cost_map_grid_.assign(cost_map_.info.width,std::vector<int>(cost_map_.info.height,0));
+  cost_map_grid_.assign(height_,std::vector<int>(width_,0));
 }
 
 void CostmapNode::convertToGrid(double range, double angle, int& x_grid, int& y_grid) {
   // Convert to cartesian coordinates
   double x = range*cos(angle); 
   double y = range*sin(angle);
-  x_grid = static_cast<int>((x - cost_map_.info.origin.position.x)/cost_map_.info.resolution);
-  y_grid = static_cast<int>((y - cost_map_.info.origin.position.y)/cost_map_.info.resolution);
+  x_grid = static_cast<int>((x - width_)/resolution_);
+  y_grid = static_cast<int>((y - width_)/resolution_);
 }
 
 void CostmapNode::markObstacle(int x_grid, int y_grid) {
-  if (x_grid >= 0 && x_grid <cost_map_.info.width && y_grid >= 0 && y_grid < cost_map.info.height) {
+  if (x_grid >= 0 && x_grid < width_ && y_grid >= 0 && y_grid < height_) {
     cost_map_grid_[x_grid][y_grid] = 100;
   }
 }
@@ -56,16 +61,16 @@ void CostmapNode::inflateObstacles(){
   const double inflation_grid_radius = inflation_radius/cost_map_.info.resolution;
   const int max_cost = 100;
 
-  for (int i = 0; i < cost_map_.info.width; i++) {
-    for (int j = 0; j < cost_map_.info.height; j++) {
+  for (int i = 0; i < width_; i++) {
+    for (int j = 0; j < height_; j++) {
       if (cost_map_grid_[i][j] == max_cost) {
         for (int dx = i - inflation_grid_radius; dx <= i + inflation_grid_radius; dx++) {
           for (int dy = j - inflation_grid_radius; dy <= j + inflation_grid_radius; dy++) {
-            if (dx >= 0 && dx < cost_map_.info.width &&
-                dy >= 0 && dy < cost_map_.info.height) {
+            if (dx >= 0 && dx < width_ &&
+                dy >= 0 && dy < height_) {
               double distance = std::sqrt(
-                std::pow((dx - i) * cost_map_.info.resolution, 2) +
-                std::pow((dy - j) * cost_map_.info.resolution, 2));
+                std::pow((dx - i) * resolution_, 2) +
+                std::pow((dy - j) * resolution_, 2));
               if (distance <= inflation_radius) {
                 int cost = static_cast<int>(max_cost * (1 - distance / inflation_radius));
                 cost_map_grid_[dx][dy] = std::max(cost_map_grid_[dx][dy], cost);
@@ -80,10 +85,10 @@ void CostmapNode::inflateObstacles(){
 
 void CostmapNode::publishCostmap(){
   cost_map_.header.stamp = this->get_clock()->now();
-  cost_map_.data.resize(cost_map_.info.width * cost_map_.info.height, -1);
-  for (int j = 0; j < cost_map_.info.height; j++) {
-    for (int i = 0; i < cost_map_.info.width; i++) {
-      int index = j * cost_map_.info.width + i;
+  cost_map_.data.resize(width_ * height_, -1);
+  for (int j = 0; j < height_; j++) {
+    for (int i = 0; i < width_; i++) {
+      int index = j * width_ + i;
       cost_map_.data[index] = cost_map_grid_[i][j];
     }
   }
