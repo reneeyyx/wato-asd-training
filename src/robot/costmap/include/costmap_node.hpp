@@ -14,6 +14,7 @@ class CostmapNode : public rclcpp::Node {
   public:
     CostmapNode();
     void laserCallback(const sensor_msgs::msg::LaserScan::SharedPtr scan);
+    void odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg);
     void initializeCostmap();
     void convertToGrid(double range, double angle, int& x_grid, int& y_grid);
     void markObstacle(int x_grid, int y_grid);
@@ -30,9 +31,13 @@ class CostmapNode : public rclcpp::Node {
 
     // Place these constructs here
     rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr lidar_sub_;
+    rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
     rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr costmap_pub_;
     nav_msgs::msg::OccupancyGrid cost_map_;
     std::vector<std::vector<int>> cost_map_grid_;
+    
+    // Robot pose
+    double robot_x_, robot_y_, robot_yaw_;
 
 };
  

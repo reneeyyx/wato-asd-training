@@ -33,7 +33,7 @@ PlannerNode::PlannerNode()
 {
   // Subscribers
   map_sub_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
-    "/map", 10, std::bind(&PlannerNode::mapCallback, this, std::placeholders::_1));
+    "/costmap", 10, std::bind(&PlannerNode::mapCallback, this, std::placeholders::_1));
   goal_sub_ = this->create_subscription<geometry_msgs::msg::PointStamped>(
     "/goal_point", 10, std::bind(&PlannerNode::goalCallback, this, std::placeholders::_1));
   odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
